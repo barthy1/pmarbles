@@ -3,7 +3,7 @@
 We need to install minimum required packages prior to executing the demo. So we shall follow the below order :-
 
 1) Git clone pmarbles :- 
-git clone https://github.com/harsha544/pmarbles
+   git clone https://github.com/harsha544/pmarbles
 
 2) Bootstrap Env :-      
    cd pmarbles
