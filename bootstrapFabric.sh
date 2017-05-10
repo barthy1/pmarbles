@@ -128,7 +128,12 @@ install_golang() {
 
 install_docker_images() {
   echo -e "\n*** install_docker_images ***\n"
-  sh download-dockerimages.sh
+  for IMAGES in peer orderer couchdb ccenv javaenv kafka zookeeper ca; do
+    echo "*** Pulling Fabric Image:  $IMAGES"
+    echo
+    docker pull hyperledger/fabric-$IMAGES:ppc64le-1.0.0-alpha
+    docker tag hyperledger/fabric-$IMAGES:ppc64le-1.0.0-alpha hyperledger/fabric-$IMAGES
+  done
   echo -e "*** DONE ***\n"
 }
 
@@ -149,6 +154,7 @@ cleanup() {
   rm -f /tmp/go1.7.5.linux-ppc64le.tar.gz
   rm -f /tmp/node-v6.9.5-linux-ppc64le.tar.gz
   rm -rf /tmp/docker*
+  rm -rf get-pip.py
 }
 
 get_linux_flavor
@@ -156,8 +162,8 @@ install_${OS_FLAVOR}_prereqs
 install_golang
 install_nodejs
 install_docker $OS_FLAVOR
-install_docker_images
 install_docker_compose
+install_docker_images
 cleanup
 
 echo "Fabric bootstrapping complete."
