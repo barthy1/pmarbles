@@ -3,15 +3,12 @@
 # Install prerequisite packages for a RHEL Hyperledger Fabric bootstrap
 install_rhel_prereqs() {
   echo -e "\nInstalling RHEL prerequisite packages\n"
-  yum -y -q install git gcc gcc-c++ wget tar device-mapper libtool-ltdl-devel
+  yum -y -q install git gcc gcc-c++ wget tar device-mapper libtool-ltdl-devel policycoreutils-python.ppc64le python2 python2-pip
   if [ $? != 0 ]; then
     echo -e "\nERROR: Unable to install pre-requisite packages.\n"
     exit 1
   fi
   install_pip
-  if [ ! -f /usr/bin/s390x-linux-gnu-gcc ]; then
-    ln -s /usr/bin/s390x-redhat-linux-gcc /usr/bin/s390x-linux-gnu-gcc
-  fi
 }
 
 # Install prerequisite packages for a SLES Hyperledger Fabric bootstrap
@@ -23,9 +20,6 @@ install_sles_prereqs() {
     exit 1
   fi
   install_pip
-  if [ ! -f /usr/bin/s390x-linux-gnu-gcc ]; then
-    ln -s /usr/bin/gcc /usr/bin/s390x-linux-gnu-gcc
-  fi
 }
 
 # Install prerequisite packages for an Unbuntu Hyperledger Fabric bootstrap
@@ -58,22 +52,10 @@ install_docker() {
 
   # Setup Docker for RHEL or SLES
   if [ $1 == "rhel" ]; then
-    DOCKER_URL="ftp://ftp.unicamp.br/pub/linuxpatch/s390x/redhat/rhel7.2/docker-1.11.2-rhel7.2-20160623.tar.gz"
-    DOCKER_DIR="docker-1.11.2-rhel7.2-20160623"
-
-    # Install Docker
+  # Install Docker
     cd /tmp
-    wget -q $DOCKER_URL
-    if [ $? != 0 ]; then
-      echo -e "\nERROR: Unable to download the Docker binary tarball.\n"
-      exit 1
-    fi
-    tar -xzf $DOCKER_DIR.tar.gz
-    if [ -f /usr/bin/docker ]; then
-      mv /usr/bin/docker /usr/bin/docker.orig
-    fi
-    cp $DOCKER_DIR/docker* /usr/bin
-
+    wget -q http://ftp.unicamp.br/pub/ppc64el/rhel/7_1/docker-ppc64el/docker-1.12.6-0.ael7b.ppc64le.rpm
+    wget -q http://ftp.unicamp.br/pub/ppc64el/rhel/7_1/docker-ppc64el/docker-selinux-1.12.6-0.ael7b.noarch.rpm
     # Setup Docker Daemon service
     if [ ! -d /etc/docker ]; then
       mkdir -p /etc/docker
@@ -125,8 +107,8 @@ EOF
 install_nodejs() {
   echo -e "\n*** install_nodejs ***\n"
   cd /tmp
-  wget -q https://nodejs.org/dist/v6.9.5/node-v6.9.5-linux-s390x.tar.gz
-  cd /usr/local && tar --strip-components 1 -xzf /tmp/node-v6.9.5-linux-s390x.tar.gz
+  wget -q https://nodejs.org/dist/v6.9.5/node-v6.9.5-linux-ppc64le.tar.gz
+  cd /usr/local && tar --strip-components 1 -xzf /tmp/node-v6.9.5-linux-ppc64le.tar.gz
   npm install gulp -g
   echo -e "*** DONE ***\n"
 }
@@ -136,32 +118,24 @@ install_golang() {
   echo -e "\n*** install_golang ***\n"
   export GOROOT="/opt/go"
   cd /tmp
-  wget --quiet --no-check-certificate https://storage.googleapis.com/golang/go1.7.3.linux-s390x.tar.gz
-  tar -xvf go1.7.3.linux-s390x.tar.gz
-  mv go /opt
-  chmod 775 /opt/go
+  wget --quiet --no-check-certificate https://storage.googleapis.com/golang/go1.7.5.linux-ppc64le.tar.gz
+  tar -C /usr/local -xzf go1.7.5.linux-ppc64le.tar.gz
   rm -f /etc/profile.d/goroot.sh || :
-  echo "export GOROOT=/opt/go" >> /etc/profile.d/goroot.sh
-  echo "export PATH=$PATH:/opt/go/bin" >> /etc/profile.d/goroot.sh
-  echo "export GOPATH=~/git" >> /etc/profile.d/goroot.sh
+  update-alternatives --install /usr/bin/go go /usr/local/go/bin/go 10
+  update-alternatives --install /usr/bin/gofmt gofmt /usr/local/go/bin/gofmt 10
   echo -e "*** DONE ***\n"
 }
 
 install_docker_images() {
   echo -e "\n*** install_docker_images ***\n"
-  for IMAGES in peer orderer couchdb ccenv javaenv kafka zookeeper ca; do
-    echo "*** Pulling Fabric Image:  $IMAGES"
-    echo
-    docker pull hyperledger/fabric-$IMAGES:s390x-1.0.0-alpha
-    docker tag hyperledger/fabric-$IMAGES:s390x-1.0.0-alpha hyperledger/fabric-$IMAGES
-  done
+  sh download-dockerimages.sh
   echo -e "*** DONE ***\n"
 }
 
 install_docker_compose() {
   echo -e "\n*** install_docker_compose ***\n"
   pip install -U pip
-  pip install -U docker-compose
+  pip install docker-compose==1.11
   echo -e "*** DONE ***\n"
 }
 
@@ -172,9 +146,9 @@ install_pip() {
 }
 
 cleanup() {
-  rm -f /tmp/go1.7.3.linux-s390x.tar.gz
-  rm -f /tmp/node-v6.9.5-linux-s390x.tar.gz
-  rm -rf /tmp/docker-1.11.2-rhel7.2-20160623*
+  rm -f /tmp/go1.7.5.linux-ppc64le.tar.gz
+  rm -f /tmp/node-v6.9.5-linux-ppc64le.tar.gz
+  rm -rf /tmp/docker*
 }
 
 get_linux_flavor
